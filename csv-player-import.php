@@ -61,3 +61,53 @@ function cpi_import_page() {
         cpi_handle_csv_upload();
     }
 }
+
+function cpi_handle_csv_upload() {
+    if (!isset($_FILES['csv_file']) || empty($_POST['game_id'])) {
+        echo '<div class="error"><p>Please select a game and upload a CSV file.</p></div>';
+        return;
+    }
+
+    $file = $_FILES['csv_file']['tmp_name'];
+    $game_id = sanitize_text_field($_POST['game_id']);
+    $handle = fopen($file, 'r');
+
+    if ($handle !== false) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'player_points';
+
+        // Skip the header row if necessary
+        fgetcsv($handle);
+
+        while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+            $player_name = sanitize_text_field($data[0]);
+            $points = intval($data[1]);
+
+            $existing_player = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table_name WHERE player_name = %s AND game_id = %s",
+                $player_name,
+                $game_id
+            ));
+
+            if ($existing_player) {
+                $wpdb->update(
+                    $table_name,
+                    ['points' => $existing_player->points + $points],
+                    ['id' => $existing_player->id]
+                );
+            } else {
+                $wpdb->insert(
+                    $table_name,
+                    [
+                        'player_name' => $player_name,
+                        'points' => $points,
+                        'game_id' => $game_id
+                    ]
+                );
+            }
+        }
+        fclose($handle);
+
+        echo '<div class="updated"><p>CSV file imported successfully.</p></div>';
+    }
+}
