@@ -147,3 +147,47 @@ function cpi_player_points_shortcode($atts) {
     return ob_get_clean();
 }
 
+
+add_action('admin_menu', 'cpi_add_reset_menu_page');
+function cpi_add_reset_menu_page() {
+    add_submenu_page(
+        'cpi_import', 
+        'Reset Points', 
+        'Reset Points', 
+        'manage_options', 
+        'cpi_reset', 
+        'cpi_reset_page'
+    );
+}
+
+function cpi_reset_page() {
+    ?>
+    <div class="wrap">
+        <h1>Reset Player Points</h1>
+        <form method="post">
+            <select name="game_id" required>
+                <option value="">Select Game</option>
+                <option value="game_1">Game 1</option>
+                <option value="game_2">Game 2</option>
+                <!-- Add more games as needed -->
+            </select>
+            <input type="submit" name="reset_points" value="Reset Points" class="button button-primary">
+        </form>
+    </div>
+    <?php
+
+    if (isset($_POST['reset_points'])) {
+        $game_id = sanitize_text_field($_POST['game_id']);
+        cpi_reset_points($game_id);
+    }
+}
+
+function cpi_reset_points($game_id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'player_points';
+
+    $wpdb->delete($table_name, ['game_id' => $game_id]);
+
+    echo '<div class="updated"><p>Points reset successfully for the selected game.</p></div>';
+}
+
