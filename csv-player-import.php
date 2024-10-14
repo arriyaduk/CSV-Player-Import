@@ -111,3 +111,39 @@ function cpi_handle_csv_upload() {
         echo '<div class="updated"><p>CSV file imported successfully.</p></div>';
     }
 }
+
+add_shortcode('cpi_player_points', 'cpi_player_points_shortcode');
+function cpi_player_points_shortcode($atts) {
+    $atts = shortcode_atts(['game_id' => ''], $atts);
+    $game_id = sanitize_text_field($atts['game_id']);
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'player_points';
+
+    $results = $wpdb->get_results($wpdb->prepare(
+        "SELECT player_name, points FROM $table_name WHERE game_id = %s ORDER BY points DESC",
+        $game_id
+    ));
+
+    ob_start();
+    ?>
+    <table>
+        <thead>
+            <tr>
+                <th>Player Name</th>
+                <th>Points</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($results as $row): ?>
+                <tr>
+                    <td><?php echo esc_html($row->player_name); ?></td>
+                    <td><?php echo esc_html($row->points); ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php
+    return ob_get_clean();
+}
+
